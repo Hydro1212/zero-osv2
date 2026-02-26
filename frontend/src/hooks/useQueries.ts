@@ -1,16 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useActor } from "./useActor";
-import type { Settings } from "../backend";
-import {
-  AccentColor,
-  ClockFormat,
-  FontSize,
-  ParticleIntensity,
-  ScanlineEffect,
-  TaskbarHeight,
-  UITransparency,
-  WindowBorderGlow,
-} from "../backend";
+import { Settings, AccentColor, ClockFormat, FontSize, ParticleIntensity, ScanlineEffect, TaskbarHeight, UITransparency, WindowBorderGlow } from "../backend";
 
 export const DEFAULT_SETTINGS: Settings = {
   accentColor: AccentColor.cyan,
@@ -27,33 +17,45 @@ export const DEFAULT_SETTINGS: Settings = {
   windowBorderGlow: WindowBorderGlow.subtle,
 };
 
-export interface AppData {
-  id: string;
-  name: string;
-  url: string;
-}
+// We store apps in local state since the backend only supports getApp(id) and addApp()
+// We track added app IDs in localStorage to persist across refreshes
+const APPS_STORAGE_KEY = "zero_os_app_ids";
 
-const APPS_STORAGE_KEY = "zero_os_apps";
-
-function loadAppsFromStorage(): AppData[] {
+function getStoredAppIds(): string[] {
   try {
-    const stored = localStorage.getItem(APPS_STORAGE_KEY);
-    if (stored) return JSON.parse(stored) as AppData[];
+    const raw = localStorage.getItem(APPS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
   } catch {
-    // ignore
+    return [];
   }
-  return [];
 }
 
-function saveAppsToStorage(apps: AppData[]) {
-  localStorage.setItem(APPS_STORAGE_KEY, JSON.stringify(apps));
+function storeAppId(id: string) {
+  const ids = getStoredAppIds();
+  if (!ids.includes(id)) {
+    ids.push(id);
+    localStorage.setItem(APPS_STORAGE_KEY, JSON.stringify(ids));
+  }
 }
 
-export function useGetApps() {
-  return useQuery<AppData[]>({
+export function useGetAllApps() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery({
     queryKey: ["apps"],
-    queryFn: () => loadAppsFromStorage(),
-    staleTime: Infinity,
+    queryFn: async () => {
+      if (!actor) return [];
+      const ids = getStoredAppIds();
+      if (ids.length === 0) return [];
+      const results = await Promise.allSettled(ids.map((id) => actor.getApp(id)));
+      return results
+        .filter(
+          (r): r is PromiseFulfilledResult<Awaited<ReturnType<typeof actor.getApp>>> =>
+            r.status === "fulfilled"
+        )
+        .map((r) => r.value);
+    },
+    enabled: !!actor && !isFetching,
   });
 }
 
@@ -62,38 +64,10 @@ export function useAddApp() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (app: AppData) => {
-      // Persist to backend if available
-      if (actor) {
-        try {
-          await actor.addApp(app.id, app.name, app.url);
-        } catch {
-          // backend may reject duplicates; continue with localStorage
-        }
-      }
-      const current = loadAppsFromStorage();
-      if (current.find((a) => a.id === app.id)) {
-        throw new Error("App already exists");
-      }
-      const updated = [...current, app];
-      saveAppsToStorage(updated);
-      return app;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["apps"] });
-    },
-  });
-}
-
-export function useRemoveApp() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (appId: string) => {
-      const current = loadAppsFromStorage();
-      const updated = current.filter((a) => a.id !== appId);
-      saveAppsToStorage(updated);
-      return appId;
+    mutationFn: async ({ id, name, url }: { id: string; name: string; url: string }) => {
+      if (!actor) throw new Error("Actor not initialized");
+      await actor.addApp(id, name, url);
+      storeAppId(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["apps"] });
@@ -106,7 +80,7 @@ export function useGetSettings() {
 
   return useQuery<Settings>({
     queryKey: ["settings"],
-    queryFn: async (): Promise<Settings> => {
+    queryFn: async () => {
       if (!actor) return DEFAULT_SETTINGS;
       try {
         return await actor.getSettings();
@@ -115,7 +89,6 @@ export function useGetSettings() {
       }
     },
     enabled: !!actor && !isFetching,
-    staleTime: 60_000,
   });
 }
 
@@ -127,38 +100,9 @@ export function useSaveSettings() {
     mutationFn: async (newSettings: Settings) => {
       if (!actor) throw new Error("Actor not initialized");
       await actor.saveSettings(newSettings);
-      return newSettings;
     },
-    onSuccess: (newSettings) => {
-      queryClient.setQueryData(["settings"], newSettings);
-    },
-  });
-}
-
-// Video wallpaper: create a local object URL from the file.
-// The URL is valid for the current browser session.
-export function useUploadWallpaperVideo() {
-  return useMutation({
-    mutationFn: async ({
-      file,
-      onProgress,
-    }: {
-      file: File;
-      onProgress?: (pct: number) => void;
-    }): Promise<string> => {
-      // Simulate progress for UX
-      if (onProgress) {
-        onProgress(10);
-        await new Promise((r) => setTimeout(r, 100));
-        onProgress(50);
-        await new Promise((r) => setTimeout(r, 100));
-        onProgress(90);
-        await new Promise((r) => setTimeout(r, 100));
-        onProgress(100);
-      }
-      // Create a persistent object URL for this session
-      const objectUrl = URL.createObjectURL(file);
-      return objectUrl;
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
     },
   });
 }

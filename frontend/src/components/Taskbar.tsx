@@ -1,37 +1,31 @@
-import React, { useState, useEffect } from "react";
-import { Plus, Settings } from "lucide-react";
-import { ClockFormat, TaskbarHeight } from "../backend";
+import { useState, useEffect } from "react";
+import { Settings, ClockFormat, TaskbarHeight, AccentColor } from "../backend";
+import { Settings as SettingsIcon, Plus, Monitor } from "lucide-react";
 
-interface TaskbarApp {
+interface TaskbarWindow {
   id: string;
   name: string;
   minimized: boolean;
 }
 
 interface TaskbarProps {
-  apps: TaskbarApp[];
-  onAppClick: (id: string) => void;
-  onAddApp: () => void;
-  onOpenSettings: () => void;
-  taskbarHeight?: "compact" | "normal" | "tall";
-  accentColor?: "cyan" | "magenta" | "green";
-  clockFormat?: "hour12" | "hour24";
-}
-
-function getBarHeight(height: string | undefined): number {
-  if (height === TaskbarHeight.compact) return 44;
-  if (height === TaskbarHeight.tall) return 72;
-  return 56;
+  openWindows: TaskbarWindow[];
+  taskbarHeight?: Settings["taskbarHeight"];
+  clockFormat?: Settings["clockFormat"];
+  accentColor?: Settings["accentColor"];
+  onWindowClick: (id: string) => void;
+  onSettingsClick: () => void;
+  onAddAppClick: () => void;
 }
 
 export default function Taskbar({
-  apps,
-  onAppClick,
-  onAddApp,
-  onOpenSettings,
-  taskbarHeight,
-  accentColor = "cyan",
-  clockFormat,
+  openWindows,
+  taskbarHeight = TaskbarHeight.normal,
+  clockFormat = ClockFormat.hour24,
+  accentColor = AccentColor.cyan,
+  onWindowClick,
+  onSettingsClick,
+  onAddAppClick,
 }: TaskbarProps) {
   const [time, setTime] = useState(new Date());
 
@@ -40,302 +34,97 @@ export default function Taskbar({
     return () => clearInterval(interval);
   }, []);
 
-  const barHeight = getBarHeight(taskbarHeight);
-  const iconSize = barHeight < 50 ? 14 : barHeight > 60 ? 20 : 16;
-  const logoSize = barHeight < 50 ? 20 : barHeight > 60 ? 30 : 24;
+  const heightClass =
+    taskbarHeight === TaskbarHeight.compact
+      ? "h-10"
+      : taskbarHeight === TaskbarHeight.tall
+      ? "h-16"
+      : "h-12";
 
-  const formatTime = (date: Date) => {
-    const use12 = clockFormat === ClockFormat.hour12;
-    return date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: use12,
-    });
-  };
+  const accentBorder =
+    accentColor === AccentColor.magenta
+      ? "border-t-neon-magenta shadow-[0_-2px_20px_oklch(0.7_0.35_320/0.4)]"
+      : accentColor === AccentColor.green
+      ? "border-t-neon-green shadow-[0_-2px_20px_oklch(0.8_0.3_145/0.4)]"
+      : "border-t-neon-cyan shadow-[0_-2px_20px_oklch(0.8_0.2_195/0.4)]";
 
-  const formatDate = (date: Date) =>
-    date.toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    });
+  const formattedTime = time.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: clockFormat === ClockFormat.hour12,
+  });
 
-  const accentCyan = "oklch(0.85 0.2 195)";
-  const accentMagenta = "oklch(0.75 0.25 320)";
-  const accentGreen = "oklch(0.8 0.2 145)";
-  const accent =
-    accentColor === "magenta"
-      ? accentMagenta
-      : accentColor === "green"
-      ? accentGreen
-      : accentCyan;
+  const accentTextClass =
+    accentColor === AccentColor.magenta
+      ? "text-neon-magenta"
+      : accentColor === AccentColor.green
+      ? "text-neon-green"
+      : "text-neon-cyan";
 
-  const btnBase: React.CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: "6px",
-    border: `1px solid ${accent}40`,
-    background: `${accent}10`,
-    color: accent,
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-    flexShrink: 0,
-  };
+  const accentGlowClass =
+    accentColor === AccentColor.magenta
+      ? "hover:shadow-[0_0_12px_oklch(0.7_0.35_320/0.8)] hover:border-neon-magenta"
+      : accentColor === AccentColor.green
+      ? "hover:shadow-[0_0_12px_oklch(0.8_0.3_145/0.8)] hover:border-neon-green"
+      : "hover:shadow-[0_0_12px_oklch(0.8_0.2_195/0.8)] hover:border-neon-cyan";
 
   return (
     <div
+      className={`fixed bottom-0 left-0 right-0 ${heightClass} flex items-center px-3 gap-2 border-t-2 ${accentBorder} z-50`}
       style={{
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: barHeight,
-        zIndex: 9000,
-        display: "flex",
-        alignItems: "center",
-        background: "oklch(0.06 0.03 240 / 0.92)",
-        backdropFilter: "blur(20px) saturate(180%)",
-        WebkitBackdropFilter: "blur(20px) saturate(180%)",
-        boxShadow: `0 -2px 20px ${accent}26, 0 -1px 0 ${accent}4d`,
-        padding: "0 8px",
-        gap: "4px",
+        background: "oklch(0.1 0.02 220 / 0.85)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
       }}
     >
-      {/* Neon top border */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: "1px",
-          background: `linear-gradient(90deg, transparent 0%, ${accent}cc 20%, oklch(0.75 0.25 320 / 0.8) 50%, ${accent}cc 80%, transparent 100%)`,
-          boxShadow: `0 0 8px ${accent}80`,
-        }}
-      />
+      {/* Left: Logo / Desktop label */}
+      <div className={`flex items-center gap-1.5 ${accentTextClass} font-orbitron text-xs font-bold shrink-0`}>
+        <Monitor size={14} />
+        <span className="hidden sm:inline">ZERO-OS</span>
+      </div>
 
-      {/* Logo / Add App */}
-      <button
-        onClick={onAddApp}
-        title="Install App"
-        style={{
-          ...btnBase,
-          padding: "0 10px",
-          height: barHeight - 12,
-          minWidth: barHeight - 12,
-          gap: "6px",
-        }}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = `${accent}26`;
-          (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 0 16px ${accent}80`;
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = `${accent}1a`;
-          (e.currentTarget as HTMLButtonElement).style.boxShadow = "none";
-        }}
-      >
-        <img
-          src="/assets/generated/zero-os-logo.dim_128x128.png"
-          alt="Zero OS"
-          style={{
-            width: logoSize,
-            height: logoSize,
-            objectFit: "contain",
-            filter: `drop-shadow(0 0 4px ${accent}cc)`,
-          }}
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.display = "none";
-          }}
-        />
-        <Plus
-          size={iconSize}
-          style={{ color: accent, filter: `drop-shadow(0 0 4px ${accent})` }}
-        />
-      </button>
+      <div className="w-px h-6 bg-white/10 mx-1 shrink-0" />
 
-      {/* Divider */}
-      <div
-        style={{
-          width: "1px",
-          height: barHeight - 20,
-          background: `${accent}33`,
-          flexShrink: 0,
-          margin: "0 4px",
-        }}
-      />
-
-      {/* Open Windows */}
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          gap: "4px",
-          overflow: "hidden",
-          padding: "0 4px",
-        }}
-      >
-        {apps.length === 0 && (
-          <span
-            style={{
-              fontFamily: "Share Tech Mono, monospace",
-              fontSize: "10px",
-              color: "oklch(0.5 0.05 240)",
-              letterSpacing: "0.1em",
-              paddingLeft: "8px",
-            }}
-          >
-            NO ACTIVE WINDOWS
-          </span>
-        )}
-        {apps.map((app) => (
+      {/* Center: Open windows */}
+      <div className="flex-1 flex items-center gap-1.5 overflow-x-auto scrollbar-none min-w-0">
+        {openWindows.map((win) => (
           <button
-            key={app.id}
-            onClick={() => onAppClick(app.id)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "0 10px",
-              height: barHeight - 14,
-              maxWidth: "160px",
-              borderRadius: "6px",
-              border: app.minimized
-                ? "1px solid oklch(0.75 0.25 320 / 0.4)"
-                : `1px solid ${accent}66`,
-              background: app.minimized
-                ? "oklch(0.75 0.25 320 / 0.08)"
-                : `${accent}1a`,
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              flexShrink: 0,
-              overflow: "hidden",
-            }}
+            key={win.id}
+            onClick={() => onWindowClick(win.id)}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-mono-tech border transition-all duration-200 shrink-0 max-w-[140px] truncate
+              ${win.minimized
+                ? `border-white/20 text-white/40 bg-white/5 ${accentGlowClass}`
+                : `border-current ${accentTextClass} bg-white/10 ${accentGlowClass}`
+              }`}
           >
-            <div
-              style={{
-                width: "5px",
-                height: "5px",
-                borderRadius: "50%",
-                flexShrink: 0,
-                background: app.minimized ? "oklch(0.75 0.25 320)" : accent,
-                boxShadow: app.minimized
-                  ? "0 0 6px oklch(0.75 0.25 320)"
-                  : `0 0 6px ${accent}`,
-              }}
-            />
-            <span
-              style={{
-                fontFamily: "Share Tech Mono, monospace",
-                fontSize: "11px",
-                color: app.minimized ? "oklch(0.75 0.25 320)" : accent,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                letterSpacing: "0.05em",
-              }}
-            >
-              {app.name}
-            </span>
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${win.minimized ? "bg-white/30" : "bg-current"}`} />
+            <span className="truncate">{win.name}</span>
           </button>
         ))}
       </div>
 
-      {/* Divider */}
-      <div
-        style={{
-          width: "1px",
-          height: barHeight - 20,
-          background: `${accent}33`,
-          flexShrink: 0,
-          margin: "0 4px",
-        }}
-      />
-
-      {/* Right: Settings + Clock */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          flexShrink: 0,
-        }}
-      >
-        {/* Settings button */}
+      {/* Right: Add app + clock + settings */}
+      <div className="flex items-center gap-2 shrink-0">
         <button
-          onClick={onOpenSettings}
-          title="Settings"
-          style={{
-            ...btnBase,
-            width: barHeight - 14,
-            height: barHeight - 14,
-            border: "1px solid oklch(0.75 0.25 320 / 0.3)",
-            background: "oklch(0.75 0.25 320 / 0.08)",
-            color: "oklch(0.75 0.25 320)",
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background =
-              "oklch(0.75 0.25 320 / 0.2)";
-            (e.currentTarget as HTMLButtonElement).style.boxShadow =
-              "0 0 12px oklch(0.75 0.25 320 / 0.5)";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background =
-              "oklch(0.75 0.25 320 / 0.08)";
-            (e.currentTarget as HTMLButtonElement).style.boxShadow = "none";
-          }}
+          onClick={onAddAppClick}
+          className={`flex items-center justify-center w-7 h-7 rounded border border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-all duration-200 ${accentGlowClass}`}
+          title="Add App"
         >
-          <Settings
-            size={iconSize}
-            style={{
-              filter: "drop-shadow(0 0 4px oklch(0.75 0.25 320 / 0.8))",
-            }}
-          />
+          <Plus size={14} />
         </button>
 
-        {/* Clock */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-end",
-            justifyContent: "center",
-            padding: "0 10px",
-            height: barHeight - 10,
-            borderRadius: "6px",
-            border: `1px solid ${accent}33`,
-            background: `${accent}0d`,
-            minWidth: "110px",
-          }}
-        >
-          <span
-            style={{
-              fontFamily: "Orbitron, monospace",
-              fontSize:
-                barHeight < 50 ? "11px" : barHeight > 60 ? "15px" : "13px",
-              color: accent,
-              letterSpacing: "0.08em",
-              lineHeight: 1.2,
-              textShadow: `0 0 8px ${accent}99`,
-              fontWeight: 600,
-            }}
-          >
-            {formatTime(time)}
-          </span>
-          <span
-            style={{
-              fontFamily: "Share Tech Mono, monospace",
-              fontSize: barHeight < 50 ? "8px" : "9px",
-              color: `${accent}99`,
-              letterSpacing: "0.1em",
-              lineHeight: 1.2,
-            }}
-          >
-            {formatDate(time)}
-          </span>
+        <div className={`font-mono-tech text-xs ${accentTextClass} tabular-nums px-2 py-1 rounded border border-current/30 bg-black/20`}>
+          {formattedTime}
         </div>
+
+        <button
+          onClick={onSettingsClick}
+          className={`flex items-center justify-center w-7 h-7 rounded border border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-all duration-200 ${accentGlowClass}`}
+          title="Settings"
+        >
+          <SettingsIcon size={14} />
+        </button>
       </div>
     </div>
   );

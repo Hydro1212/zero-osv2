@@ -89,10 +89,11 @@ export class ExternalBlob {
         return this;
     }
 }
-export interface VideoSettings {
-    playbackSpeed: number;
-    volume: number;
-    isMuted: boolean;
+export interface AppEntry {
+    id: string;
+    url: string;
+    name: string;
+    position: [bigint, bigint];
 }
 export interface _CaffeineStorageRefillInformation {
     proposed_top_up_amount?: bigint;
@@ -100,12 +101,6 @@ export interface _CaffeineStorageRefillInformation {
 export interface _CaffeineStorageCreateCertificateResult {
     method: string;
     blob_hash: string;
-}
-export interface AppEntry {
-    id: string;
-    url: string;
-    name: string;
-    position: [bigint, bigint];
 }
 export interface Settings {
     clockFormat: ClockFormat;
@@ -173,12 +168,9 @@ export interface backendInterface {
     _caffeineStorageRefillCashier(refillInformation: _CaffeineStorageRefillInformation | null): Promise<_CaffeineStorageRefillResult>;
     _caffeineStorageUpdateGatewayPrincipals(): Promise<void>;
     addApp(id: string, name: string, url: string): Promise<void>;
-    doesFileExist(directoryId: string, fileName: string): Promise<boolean>;
     getApp(id: string): Promise<AppEntry>;
     getSettings(): Promise<Settings>;
-    getVideoSettings(): Promise<VideoSettings>;
     saveSettings(newSettings: Settings): Promise<void>;
-    updateVideoSettings(newVideoSettings: VideoSettings): Promise<void>;
 }
 import type { AccentColor as _AccentColor, ClockFormat as _ClockFormat, FontSize as _FontSize, GridOverlay as _GridOverlay, IconSize as _IconSize, ParticleIntensity as _ParticleIntensity, ScanlineEffect as _ScanlineEffect, Settings as _Settings, TaskbarHeight as _TaskbarHeight, UITransparency as _UITransparency, WindowBorderGlow as _WindowBorderGlow, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
@@ -281,20 +273,6 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async doesFileExist(arg0: string, arg1: string): Promise<boolean> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.doesFileExist(arg0, arg1);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.doesFileExist(arg0, arg1);
-            return result;
-        }
-    }
     async getApp(arg0: string): Promise<AppEntry> {
         if (this.processError) {
             try {
@@ -323,20 +301,6 @@ export class Backend implements backendInterface {
             return from_candid_Settings_n8(this._uploadFile, this._downloadFile, result);
         }
     }
-    async getVideoSettings(): Promise<VideoSettings> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getVideoSettings();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getVideoSettings();
-            return result;
-        }
-    }
     async saveSettings(arg0: Settings): Promise<void> {
         if (this.processError) {
             try {
@@ -348,20 +312,6 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.saveSettings(to_candid_Settings_n28(this._uploadFile, this._downloadFile, arg0));
-            return result;
-        }
-    }
-    async updateVideoSettings(arg0: VideoSettings): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.updateVideoSettings(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.updateVideoSettings(arg0);
             return result;
         }
     }

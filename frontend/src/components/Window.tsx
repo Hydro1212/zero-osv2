@@ -1,189 +1,194 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { X, Minus, Maximize2, Minimize2 } from 'lucide-react';
-import { WindowBorderGlow, UITransparency } from '../backend';
-import type { Settings } from '../backend';
-
-type WindowBorderGlowValue = Settings['windowBorderGlow'];
-type UITransparencyValue = Settings['uiTransparency'];
+import { useState, useRef, useCallback, useEffect } from "react";
+import { Settings, UITransparency, WindowBorderGlow, AccentColor } from "../backend";
+import { X, Minus, Maximize2 } from "lucide-react";
 
 interface WindowProps {
   id: string;
-  title: string;
+  name: string;
   url: string;
-  isMinimized: boolean;
   zIndex: number;
+  uiTransparency?: Settings["uiTransparency"];
+  windowBorderGlow?: Settings["windowBorderGlow"];
+  accentColor?: Settings["accentColor"];
   onClose: () => void;
   onMinimize: () => void;
   onFocus: () => void;
-  windowBorderGlow?: WindowBorderGlowValue;
-  uiTransparency?: UITransparencyValue;
-}
-
-function getGlowStyle(glow: WindowBorderGlowValue | undefined): string {
-  switch (glow) {
-    case WindowBorderGlow.none: return 'none';
-    case WindowBorderGlow.intense: return '0 0 16px oklch(0.85 0.2 195 / 0.8), 0 0 40px oklch(0.85 0.2 195 / 0.4), 0 0 80px oklch(0.85 0.2 195 / 0.2)';
-    default: return '0 0 8px oklch(0.85 0.2 195 / 0.4), 0 0 20px oklch(0.85 0.2 195 / 0.15)';
-  }
-}
-
-function getBlurStyle(transparency: UITransparencyValue | undefined): string {
-  switch (transparency) {
-    case UITransparency.none: return 'blur(0px)';
-    case UITransparency.low: return 'blur(4px)';
-    case UITransparency.high: return 'blur(24px)';
-    default: return 'blur(12px)';
-  }
-}
-
-function getBgColor(transparency: UITransparencyValue | undefined): string {
-  switch (transparency) {
-    case UITransparency.none: return 'oklch(0.08 0.02 240 / 0.98)';
-    case UITransparency.low: return 'oklch(0.08 0.02 240 / 0.88)';
-    case UITransparency.high: return 'oklch(0.08 0.02 240 / 0.55)';
-    default: return 'oklch(0.08 0.02 240 / 0.75)';
-  }
 }
 
 export default function Window({
   id,
-  title,
+  name,
   url,
-  isMinimized,
   zIndex,
+  uiTransparency = UITransparency.medium,
+  windowBorderGlow = WindowBorderGlow.subtle,
+  accentColor = AccentColor.cyan,
   onClose,
   onMinimize,
   onFocus,
-  windowBorderGlow = WindowBorderGlow.subtle,
-  uiTransparency = UITransparency.medium,
 }: WindowProps) {
-  const [position, setPosition] = useState({ x: 80 + Math.random() * 120, y: 60 + Math.random() * 80 });
-  const [size, setSize] = useState({ width: 900, height: 600 });
-  const [isMaximized, setIsMaximized] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
+  const [pos, setPos] = useState({ x: 80 + Math.random() * 120, y: 60 + Math.random() * 80 });
+  const [size, setSize] = useState({ w: 900, h: 600 });
+  const [maximized, setMaximized] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
-  const resizeStart = useRef({ x: 0, y: 0, w: 0, h: 0 });
+  const windowRef = useRef<HTMLDivElement>(null);
 
-  const handleMouseDownDrag = useCallback((e: React.MouseEvent) => {
-    if (isMaximized) return;
-    e.preventDefault();
-    onFocus();
-    setIsDragging(true);
-    dragOffset.current = { x: e.clientX - position.x, y: e.clientY - position.y };
-  }, [isMaximized, position, onFocus]);
+  const bgOpacity =
+    uiTransparency === UITransparency.none
+      ? "0.97"
+      : uiTransparency === UITransparency.low
+      ? "0.88"
+      : uiTransparency === UITransparency.high
+      ? "0.55"
+      : "0.75";
 
-  const handleMouseDownResize = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onFocus();
-    setIsResizing(true);
-    resizeStart.current = { x: e.clientX, y: e.clientY, w: size.width, h: size.height };
-  }, [size, onFocus]);
+  const blurAmount =
+    uiTransparency === UITransparency.none
+      ? "0px"
+      : uiTransparency === UITransparency.low
+      ? "8px"
+      : uiTransparency === UITransparency.high
+      ? "24px"
+      : "16px";
+
+  const glowStyle =
+    windowBorderGlow === WindowBorderGlow.none
+      ? "none"
+      : windowBorderGlow === WindowBorderGlow.intense
+      ? accentColor === AccentColor.magenta
+        ? "0 0 30px oklch(0.7 0.35 320 / 0.7), 0 0 60px oklch(0.7 0.35 320 / 0.3)"
+        : accentColor === AccentColor.green
+        ? "0 0 30px oklch(0.8 0.3 145 / 0.7), 0 0 60px oklch(0.8 0.3 145 / 0.3)"
+        : "0 0 30px oklch(0.8 0.2 195 / 0.7), 0 0 60px oklch(0.8 0.2 195 / 0.3)"
+      : accentColor === AccentColor.magenta
+      ? "0 0 12px oklch(0.7 0.35 320 / 0.4)"
+      : accentColor === AccentColor.green
+      ? "0 0 12px oklch(0.8 0.3 145 / 0.4)"
+      : "0 0 12px oklch(0.8 0.2 195 / 0.4)";
+
+  const borderColor =
+    accentColor === AccentColor.magenta
+      ? "oklch(0.7 0.35 320 / 0.5)"
+      : accentColor === AccentColor.green
+      ? "oklch(0.8 0.3 145 / 0.5)"
+      : "oklch(0.8 0.2 195 / 0.5)";
+
+  const accentTextClass =
+    accentColor === AccentColor.magenta
+      ? "text-neon-magenta"
+      : accentColor === AccentColor.green
+      ? "text-neon-green"
+      : "text-neon-cyan";
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (maximized) return;
+      e.preventDefault();
+      onFocus();
+      setDragging(true);
+      dragOffset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+    },
+    [maximized, pos, onFocus]
+  );
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging) {
-        setPosition({
-          x: Math.max(0, Math.min(window.innerWidth - size.width, e.clientX - dragOffset.current.x)),
-          y: Math.max(0, Math.min(window.innerHeight - 60, e.clientY - dragOffset.current.y)),
-        });
-      }
-      if (isResizing) {
-        const dx = e.clientX - resizeStart.current.x;
-        const dy = e.clientY - resizeStart.current.y;
-        setSize({
-          width: Math.max(400, resizeStart.current.w + dx),
-          height: Math.max(300, resizeStart.current.h + dy),
-        });
-      }
+    if (!dragging) return;
+    const onMove = (e: MouseEvent) => {
+      setPos({
+        x: Math.max(0, e.clientX - dragOffset.current.x),
+        y: Math.max(0, e.clientY - dragOffset.current.y),
+      });
     };
-    const handleMouseUp = () => {
-      setIsDragging(false);
-      setIsResizing(false);
-    };
-    if (isDragging || isResizing) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    }
+    const onUp = () => setDragging(false);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
     };
-  }, [isDragging, isResizing, size.width]);
+  }, [dragging]);
 
-  if (isMinimized) return null;
-
-  const glowStyle = getGlowStyle(windowBorderGlow);
-  const backdropBlur = getBlurStyle(uiTransparency);
-  const bgColor = getBgColor(uiTransparency);
+  const normalizedUrl = url.startsWith("http") ? url : `https://${url}`;
 
   return (
     <div
-      onClick={onFocus}
+      ref={windowRef}
+      onMouseDown={onFocus}
       style={{
-        position: 'fixed',
-        left: isMaximized ? 0 : position.x,
-        top: isMaximized ? 0 : position.y,
-        width: isMaximized ? '100vw' : size.width,
-        height: isMaximized ? 'calc(100vh - 56px)' : size.height,
+        position: "fixed",
+        left: maximized ? 0 : pos.x,
+        top: maximized ? 0 : pos.y,
+        width: maximized ? "100vw" : size.w,
+        height: maximized ? "calc(100vh - 48px)" : size.h,
         zIndex,
+        background: `oklch(0.12 0.02 220 / ${bgOpacity})`,
+        backdropFilter: `blur(${blurAmount})`,
+        WebkitBackdropFilter: `blur(${blurAmount})`,
+        border: `1px solid ${borderColor}`,
         boxShadow: glowStyle,
-        backdropFilter: backdropBlur,
-        WebkitBackdropFilter: backdropBlur,
-        background: bgColor,
-        border: '1px solid oklch(0.85 0.2 195 / 0.25)',
-        borderRadius: '8px',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-        cursor: isDragging ? 'grabbing' : 'default',
-        userSelect: isDragging ? 'none' : 'auto',
+        borderRadius: "8px",
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        minWidth: 320,
+        minHeight: 200,
+        resize: maximized ? "none" : "both",
       }}
     >
       {/* Title bar */}
       <div
-        onMouseDown={handleMouseDownDrag}
+        className="flex items-center gap-2 px-3 py-2 shrink-0 select-none"
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 12px',
-          height: '36px',
-          background: 'oklch(0.12 0.04 240 / 0.9)',
-          borderBottom: '1px solid oklch(0.85 0.2 195 / 0.3)',
-          cursor: isMaximized ? 'default' : 'grab',
-          flexShrink: 0,
+          background: "oklch(0.08 0.02 220 / 0.9)",
+          borderBottom: `1px solid ${borderColor}`,
+          cursor: dragging ? "grabbing" : "grab",
         }}
+        onMouseDown={handleMouseDown}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'oklch(0.85 0.2 195)', boxShadow: '0 0 6px oklch(0.85 0.2 195)' }} />
-          <span style={{ fontFamily: 'Orbitron, monospace', fontSize: '11px', color: 'oklch(0.85 0.2 195)', letterSpacing: '0.1em', textTransform: 'uppercase', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {title}
-          </span>
-        </div>
-        <div style={{ display: 'flex', gap: '6px' }} onMouseDown={e => e.stopPropagation()}>
+        {/* Traffic lights */}
+        <button
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={onClose}
+          className="w-3 h-3 rounded-full bg-red-500 hover:bg-red-400 transition-colors shrink-0"
+          title="Close"
+        />
+        <button
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={onMinimize}
+          className="w-3 h-3 rounded-full bg-yellow-500 hover:bg-yellow-400 transition-colors shrink-0"
+          title="Minimize"
+        />
+        <button
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={() => setMaximized((m) => !m)}
+          className="w-3 h-3 rounded-full bg-green-500 hover:bg-green-400 transition-colors shrink-0"
+          title="Maximize"
+        />
+
+        <span className={`flex-1 text-center font-mono-tech text-xs ${accentTextClass} truncate`}>
+          {name}
+        </span>
+
+        <div className="flex items-center gap-1 shrink-0">
           <button
-            onClick={(e) => { e.stopPropagation(); onMinimize(); }}
-            style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid oklch(0.75 0.15 60 / 0.5)', background: 'oklch(0.75 0.15 60 / 0.15)', color: 'oklch(0.85 0.15 60)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'oklch(0.75 0.15 60 / 0.4)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'oklch(0.75 0.15 60 / 0.15)'; }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={onMinimize}
+            className="p-1 text-white/40 hover:text-white/80 transition-colors"
           >
             <Minus size={12} />
           </button>
           <button
-            onClick={(e) => { e.stopPropagation(); setIsMaximized(!isMaximized); }}
-            style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid oklch(0.85 0.2 195 / 0.5)', background: 'oklch(0.85 0.2 195 / 0.15)', color: 'oklch(0.85 0.2 195)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'oklch(0.85 0.2 195 / 0.4)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'oklch(0.85 0.2 195 / 0.15)'; }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={() => setMaximized((m) => !m)}
+            className="p-1 text-white/40 hover:text-white/80 transition-colors"
           >
-            {isMaximized ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+            <Maximize2 size={12} />
           </button>
           <button
-            onClick={(e) => { e.stopPropagation(); onClose(); }}
-            style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid oklch(0.65 0.25 25 / 0.5)', background: 'oklch(0.65 0.25 25 / 0.15)', color: 'oklch(0.75 0.25 25)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'oklch(0.65 0.25 25 / 0.5)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'oklch(0.65 0.25 25 / 0.15)'; }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={onClose}
+            className="p-1 text-white/40 hover:text-white/80 transition-colors"
           >
             <X size={12} />
           </button>
@@ -191,30 +196,12 @@ export default function Window({
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-        <iframe
-          src={url}
-          title={title}
-          style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-        />
-      </div>
-
-      {/* Resize handle */}
-      {!isMaximized && (
-        <div
-          onMouseDown={handleMouseDownResize}
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            right: 0,
-            width: '16px',
-            height: '16px',
-            cursor: 'se-resize',
-            background: 'linear-gradient(135deg, transparent 50%, oklch(0.85 0.2 195 / 0.4) 50%)',
-          }}
-        />
-      )}
+      <iframe
+        src={normalizedUrl}
+        title={name}
+        className="flex-1 w-full border-none"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+      />
     </div>
   );
 }

@@ -85,11 +85,6 @@ export const Settings = IDL.Record({
   'taskbarHeight' : TaskbarHeight,
   'windowBorderGlow' : WindowBorderGlow,
 });
-export const VideoSettings = IDL.Record({
-  'playbackSpeed' : IDL.Float64,
-  'volume' : IDL.Nat8,
-  'isMuted' : IDL.Bool,
-});
 
 export const idlService = IDL.Service({
   '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -119,12 +114,9 @@ export const idlService = IDL.Service({
     ),
   '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
   'addApp' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
-  'doesFileExist' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
   'getApp' : IDL.Func([IDL.Text], [AppEntry], ['query']),
   'getSettings' : IDL.Func([], [Settings], ['query']),
-  'getVideoSettings' : IDL.Func([], [VideoSettings], ['query']),
   'saveSettings' : IDL.Func([Settings], [], []),
-  'updateVideoSettings' : IDL.Func([VideoSettings], [], []),
 });
 
 export const idlInitArgs = [];
@@ -201,11 +193,6 @@ export const idlFactory = ({ IDL }) => {
     'taskbarHeight' : TaskbarHeight,
     'windowBorderGlow' : WindowBorderGlow,
   });
-  const VideoSettings = IDL.Record({
-    'playbackSpeed' : IDL.Float64,
-    'volume' : IDL.Nat8,
-    'isMuted' : IDL.Bool,
-  });
   
   return IDL.Service({
     '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -235,12 +222,9 @@ export const idlFactory = ({ IDL }) => {
       ),
     '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
     'addApp' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
-    'doesFileExist' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
     'getApp' : IDL.Func([IDL.Text], [AppEntry], ['query']),
     'getSettings' : IDL.Func([], [Settings], ['query']),
-    'getVideoSettings' : IDL.Func([], [VideoSettings], ['query']),
     'saveSettings' : IDL.Func([Settings], [], []),
-    'updateVideoSettings' : IDL.Func([VideoSettings], [], []),
   });
 };
 

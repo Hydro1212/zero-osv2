@@ -1,69 +1,49 @@
-import React, { useRef, useEffect } from "react";
-
 interface WallpaperProps {
-  url: string;
+  url?: string;
 }
 
 export default function Wallpaper({ url }: WallpaperProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  const isVideo =
-    url.endsWith(".mp4") ||
-    url.includes("video/mp4") ||
-    (url.startsWith("blob:") && url.length > 5);
-
-  // Attempt autoplay with sound; browsers may block unmuted autoplay
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !isVideo) return;
-
-    video.muted = false;
-    const playPromise = video.play();
-    if (playPromise !== undefined) {
-      playPromise.catch(() => {
-        // If unmuted autoplay is blocked, fall back to muted
-        video.muted = true;
-        video.play().catch(() => {});
-      });
-    }
-  }, [url, isVideo]);
-
-  const baseStyle: React.CSSProperties = {
-    position: "fixed",
-    inset: 0,
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-    zIndex: 0,
-    pointerEvents: "none",
-  };
-
-  if (!url) {
-    return (
-      <div
-        style={{
-          ...baseStyle,
-          background:
-            "radial-gradient(ellipse at 20% 50%, oklch(0.12 0.04 240) 0%, oklch(0.06 0.02 240) 60%, oklch(0.04 0.01 240) 100%)",
-        }}
-      />
-    );
-  }
+  const isVideo = url && url.toLowerCase().includes(".mp4");
+  const defaultWallpaper = "/assets/generated/wallpaper.dim_1920x1080.png";
+  const src = url && url.trim() !== "" ? url : defaultWallpaper;
 
   if (isVideo) {
     return (
       <video
-        ref={videoRef}
-        key={url}
-        src={url}
-        style={baseStyle}
+        key={src}
         autoPlay
         loop
+        muted
         playsInline
-        muted={false}
-      />
+        style={{
+          position: "fixed",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          zIndex: 0,
+          pointerEvents: "none",
+        }}
+      >
+        <source src={src} type="video/mp4" />
+      </video>
     );
   }
 
-  return <img src={url} style={baseStyle} alt="" />;
+  return (
+    <img
+      key={src}
+      src={src}
+      alt="Desktop Wallpaper"
+      style={{
+        position: "fixed",
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+        zIndex: 0,
+        pointerEvents: "none",
+      }}
+    />
+  );
 }

@@ -1,5 +1,5 @@
-import Desktop from './components/Desktop';
-import { Toaster } from '@/components/ui/sonner';
+import { Toaster } from "@/components/ui/sonner";
+import Desktop from "./components/Desktop";
 
 export default function App() {
   return (
@@ -9,11 +9,10 @@ export default function App() {
         theme="dark"
         toastOptions={{
           style: {
-            background: 'oklch(0.1 0.015 260)',
-            border: '1px solid oklch(0.85 0.18 195 / 0.4)',
-            color: 'oklch(0.85 0.18 195)',
-            fontFamily: 'Share Tech Mono, monospace',
-            fontSize: '0.8rem',
+            background: "oklch(0.15 0.02 220)",
+            border: "1px solid oklch(0.7 0.25 195)",
+            color: "oklch(0.95 0.05 195)",
+            fontFamily: "Share Tech Mono, monospace",
           },
         }}
       />

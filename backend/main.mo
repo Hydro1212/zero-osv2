@@ -4,6 +4,8 @@ import Order "mo:core/Order";
 import Runtime "mo:core/Runtime";
 import MixinStorage "blob-storage/Mixin";
 
+
+
 actor {
   include MixinStorage();
 
@@ -81,33 +83,7 @@ actor {
     #intense;
   };
 
-  type VideoSettings = {
-    isMuted : Bool;
-    volume : Nat8;
-    playbackSpeed : Float;
-  };
-
-  var videoSettings : VideoSettings = {
-    isMuted = false;
-    volume = 50;
-    playbackSpeed = 1.0;
-  };
-
-  public shared ({ caller }) func updateVideoSettings(newVideoSettings : VideoSettings) : async () {
-    videoSettings := newVideoSettings;
-  };
-
-  public query ({ caller }) func getVideoSettings() : async VideoSettings {
-    videoSettings;
-  };
-
-  // Check if a file exists in a directory
-  public shared ({ caller }) func doesFileExist(directoryId : Text, fileName : Text) : async Bool {
-    false;
-  };
-
-  // Settings management
-  public type Settings = {
+  type Settings = {
     accentColor : AccentColor;
     wallpaperUrl : Text;
     desktopLabel : Text;
@@ -157,6 +133,7 @@ actor {
     };
   };
 
+  // Settings management
   public query ({ caller }) func getSettings() : async Settings {
     settings;
   };
@@ -165,3 +142,4 @@ actor {
     settings := newSettings;
   };
 };
+

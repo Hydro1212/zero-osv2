@@ -1,12 +1,14 @@
 # Specification
 
 ## Summary
-**Goal:** Add a windowed Settings app, local MP4 wallpaper upload with audio, and reliable app persistence to the Zero OS desktop.
+**Goal:** Re-apply and verify all existing source files so the deployed application reflects the current codebase state with all previously implemented features.
 
 **Planned changes:**
-- Add a "Settings" app icon to the desktop that opens the settings UI inside a draggable, resizable neon window with minimize/maximize/close controls and organized sections (Appearance, Wallpaper, Desktop, Taskbar, Effects, Clock)
-- Add an "Upload MP4" file input in the Wallpaper section of the Settings app; on selection, upload the file to the Motoko backend (stored as [Nat8]); expose `uploadWallpaperVideo` and `getWallpaperVideo` endpoints
-- Render the uploaded MP4 as a full-screen looping background `<video>` element with autoplay, loop, unmuted audio, and object-fit cover; PIN (2011) protection applies to this upload as well
-- Fix app CRUD persistence: wait for backend confirmation before updating local state on add/remove, invalidate React Query cache after each operation, show neon error toasts on failure, and remove stale local state overrides
+- Ensure the neon/cyberpunk OS-style desktop UI renders correctly with Taskbar, AppIcons, Windows, SettingsPanel, and Wallpaper components
+- Ensure the expanded settings panel (appearance, typography, effects, clock, taskbar, wallpaper sections) is accessible and functional
+- Ensure the bottom taskbar displays the live clock, open window buttons, add-app button, and settings button
+- Ensure particle effects render on the desktop canvas when enabled
+- Ensure app icons render with favicon, glow effects, and correct sizing from settings
+- Ensure backend endpoints for adding/getting apps and saving/getting settings respond correctly
 
-**User-visible outcome:** Users can open Settings as a proper desktop window, upload an MP4 from their device as a sound-enabled wallpaper, and reliably add or remove apps that persist across page refreshes for all visitors.
+**User-visible outcome:** The live app displays the full neon/cyberpunk desktop UI with all previously implemented features working as intended, with no visual regressions.

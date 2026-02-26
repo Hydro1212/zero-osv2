@@ -56,11 +56,6 @@ export type UITransparency = { 'low' : null } |
   { 'high' : null } |
   { 'none' : null } |
   { 'medium' : null };
-export interface VideoSettings {
-  'playbackSpeed' : number,
-  'volume' : number,
-  'isMuted' : boolean,
-}
 export type WindowBorderGlow = { 'intense' : null } |
   { 'none' : null } |
   { 'subtle' : null };
@@ -92,12 +87,9 @@ export interface _SERVICE {
   >,
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   'addApp' : ActorMethod<[string, string, string], undefined>,
-  'doesFileExist' : ActorMethod<[string, string], boolean>,
   'getApp' : ActorMethod<[string], AppEntry>,
   'getSettings' : ActorMethod<[], Settings>,
-  'getVideoSettings' : ActorMethod<[], VideoSettings>,
   'saveSettings' : ActorMethod<[Settings], undefined>,
-  'updateVideoSettings' : ActorMethod<[VideoSettings], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

@@ -1,98 +1,95 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Settings App with Functional Settings, Local MP4 Wallpaper Upload with Sound, and Persistent App CRUD",
+  "title": "Fix deployment — ensure latest changes are reflected in live app",
   "requirements": [
     {
-      "id": "REQ-15",
-      "summary": "Create a dedicated Settings app icon on the desktop that opens the Settings panel as a windowed application with neon styling",
+      "id": "REQ-1",
+      "summary": "Verify and re-apply all existing frontend source files so that the deployed application reflects the current codebase state, including the expanded settings panel, redesigned taskbar, neon futuristic styling, particle effects, wallpaper support, and all other implemented features.",
       "acceptanceCriteria": [
-        "A 'Settings' app icon appears on the desktop grid alongside other apps",
-        "Clicking the Settings icon opens the settings UI inside a draggable/resizable neon window",
-        "The window has a title bar reading 'Settings' with minimize, maximize, and close buttons",
-        "All existing settings (accent color, wallpaper, font size, blur, clock format, taskbar height, icon size, particle intensity, scanlines, grid overlay, glow intensity, desktop label) are present and functional inside the window",
-        "Settings changes are applied immediately and persisted to the Motoko backend"
+        "The live preview shows the neon/cyberpunk OS-style desktop UI with Taskbar, AppIcons, Windows, SettingsPanel, and Wallpaper components rendered correctly.",
+        "The expanded settings panel (appearance, typography, effects, clock, taskbar, wallpaper sections) is accessible and functional.",
+        "The bottom taskbar displays the live clock, open window buttons, add-app button, and settings button.",
+        "Particle effects render on the desktop canvas when enabled.",
+        "App icons render with favicon, glow effects, and correct sizing from settings.",
+        "Backend endpoints for adding/getting apps and saving/getting settings respond correctly.",
+        "No visual regressions from the previously described Version 3 state."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/Desktop.tsx",
+          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Add a built-in Settings app to the apps array with id 'settings', name 'Settings', and url 'internal://settings'. Update the openApp handler to recognize the 'settings' app and set settingsOpen to true instead of adding it to openWindows. Remove the standalone settings button from the UI since settings will now be accessed via the desktop icon."
+          "description": "Verify and re-apply the root React component that renders the Desktop alongside the dark-themed neon-styled Sonner toast notification provider. Ensure the component structure matches the current implementation with proper toast theming and Desktop rendering."
         },
         {
-          "path": "frontend/src/components/SettingsPanel.tsx",
+          "path": "frontend/src/components/Desktop.tsx",
           "operation": "modify",
-          "description": "Refactor SettingsPanel to accept isOpen and onClose props instead of managing its own overlay visibility. Remove the overlay background and close button, as the panel will now be rendered inside a Window component. Keep all existing settings sections (Appearance, Wallpaper, Desktop, Taskbar, Effects, Clock) fully functional with their current persistence logic."
+          "description": "Verify and re-apply the main desktop component that composes the full OS-like UI, managing open windows, z-index stacking, and rendering Wallpaper, ParticleEffect, Taskbar, AppIcons, Windows, SettingsPanel, and AddAppDialog with settings-driven overlays. Ensure all component compositions and state management logic are current."
         },
         {
           "path": "frontend/src/components/Taskbar.tsx",
           "operation": "modify",
-          "description": "Remove the standalone settings button since settings will now be launched via the desktop icon. Keep the add-app button and all other taskbar functionality intact."
-        }
-      ]
-    },
-    {
-      "id": "REQ-16",
-      "summary": "Add local device MP4 file upload support for wallpaper with audio playback using the blob-storage component",
-      "acceptanceCriteria": [
-        "Settings wallpaper section shows a 'Upload MP4' file input button accepting .mp4 files",
-        "Selecting a local MP4 file triggers upload to the Motoko backend via a new uploadWallpaperVideo endpoint",
-        "The backend stores the MP4 binary data (as [Nat8]) and exposes a getWallpaperVideo query",
-        "After upload, the desktop Wallpaper component fetches and renders the video as a full-screen <video> element with autoplay, loop, muted=false, and playsInline",
-        "Audio plays automatically when the video wallpaper loads",
-        "The video covers the full viewport with object-fit: cover and no quality-degrading CSS transforms",
-        "Existing URL-based wallpaper input remains available alongside the file upload option",
-        "The upload is PIN-protected (PIN: 2011) consistent with existing wallpaper change protection"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Add a useUploadWallpaperVideo mutation hook that uses the blob-storage component to upload MP4 files. Use ExternalBlob.fromBytes() to wrap the file data and include upload progress tracking via withUploadProgress. The hook should call a new backend method to store the ExternalBlob reference, then invalidate the settings query cache on success. Verify the blob-storage component's usage instructions before implementing."
+          "description": "Verify and re-apply the fixed bottom taskbar component displaying a live clock, open window buttons with minimize/restore, an add-app button, and a settings button, with height configurable via settings. Ensure the clock format, window controls, and button interactions match the current implementation."
         },
         {
           "path": "frontend/src/components/SettingsPanel.tsx",
           "operation": "modify",
-          "description": "Add an MP4 file upload input in the Wallpaper section with accept='.mp4,video/mp4'. When a file is selected, validate it is an MP4, prompt for PIN (2011), then call useUploadWallpaperVideo with the file Blob. Show upload progress using a neon-styled progress indicator. Display success/error toast notifications. Keep the existing URL input field visible alongside the file upload button. Use the blob-storage component to handle the upload. Verify the component's usage instructions before implementing."
+          "description": "Verify and re-apply the sectioned settings panel (appearance, typography, effects, clock, taskbar, wallpaper, etc.) that reads and saves settings via React Query hooks, with PIN-protected wallpaper changes. Ensure all settings sections, controls, and PIN protection logic are current."
         },
         {
           "path": "frontend/src/components/Wallpaper.tsx",
           "operation": "modify",
-          "description": "Extend the video rendering logic to support blob-storage ExternalBlob URLs. When the wallpaperUrl indicates a stored video blob, use ExternalBlob.getDirectURL() to obtain the streaming URL and render it in the <video> element with muted={false} to enable audio playback by default. Ensure autoplay, loop, and playsInline attributes are set. Keep object-fit: cover and remove any CSS transforms that degrade quality. Verify the blob-storage component's usage instructions before implementing."
-        }
-      ]
-    },
-    {
-      "id": "REQ-17",
-      "summary": "Fix app persistence by ensuring backend mutations complete before updating UI state and invalidating query cache",
-      "acceptanceCriteria": [
-        "Adding an app via the AddApp dialog persists it to the backend and the icon appears on the desktop immediately after the backend confirms success",
-        "Removing an app persists the deletion to the backend and the icon disappears from the desktop immediately after the backend confirms",
-        "If the backend call fails, a neon-styled error toast notification is shown and the UI state is not updated",
-        "The app list is re-fetched from the backend after every successful add or remove (React Query cache invalidated)",
-        "Refreshing the page shows the same apps that were added/removed — no stale state",
-        "All visitors see the same up-to-date app list"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Update useAddApp mutation to await the backend addApp call, then invalidate the 'apps' query key on success to force a refetch. Add error handling that throws or returns the error so the UI can display toast notifications. Ensure no optimistic updates occur before backend confirmation."
+          "description": "Verify and re-apply the desktop wallpaper component that renders either a full-screen looping video (for .mp4 URLs) or a static image, falling back to the default wallpaper asset (frontend/public/assets/generated/wallpaper.dim_1920x1080.png) when no URL is provided. Ensure video autoplay, loop, and fallback logic are correctly implemented."
         },
         {
-          "path": "frontend/src/components/AddAppDialog.tsx",
+          "path": "frontend/src/components/ParticleEffect.tsx",
           "operation": "modify",
-          "description": "Wrap the addApp mutation call in try/catch. On success, show a success toast and close the dialog only after the mutation completes. On error, show a neon-styled error toast with the error message and keep the dialog open. Do not close the dialog or clear the form until the backend confirms success."
-        },
-        {
-          "path": "frontend/src/components/Desktop.tsx",
-          "operation": "modify",
-          "description": "Remove any local state management for the apps list that might override backend data. Ensure apps are always derived from the useGetApps query result. When removing an app, call the backend removeApp mutation and await its completion before updating any UI state. On error, display a neon-styled error toast. Invalidate the 'apps' query cache after successful removal to trigger a refetch."
+          "description": "Verify and re-apply the canvas-based animated particle effect component that renders dots, orbs, and streaks with configurable intensity levels (off/low/medium/high). Ensure the canvas rendering, animation loop, and intensity-based particle generation match the current implementation."
         },
         {
           "path": "frontend/src/components/AppIcon.tsx",
           "operation": "modify",
-          "description": "Ensure the remove app action (if triggered from AppIcon) properly awaits backend confirmation and shows error toasts on failure. If app removal is handled entirely in Desktop, ensure AppIcon's UI state reflects the query-derived apps list without local overrides."
+          "description": "Verify and re-apply the desktop app icon component that renders a favicon, scales based on iconSize/fontSize settings, and applies neon hover glow effects with open/minimized state indicators. Ensure favicon loading, size scaling, and glow effects are correctly implemented."
+        },
+        {
+          "path": "frontend/src/components/Window.tsx",
+          "operation": "modify",
+          "description": "Verify and re-apply the draggable, resizable browser window component with minimize/maximize/close controls that applies dynamic glow, blur, and background opacity styles based on settings. Ensure drag/resize interactions, window controls, and settings-driven styling are current."
+        },
+        {
+          "path": "frontend/src/components/AddAppDialog.tsx",
+          "operation": "modify",
+          "description": "Verify and re-apply the modal dialog for installing new apps by entering a name and URL, with URL normalization, backend mutation via useAddApp, and neon futuristic styling. Ensure form validation, backend integration, and dialog styling match the current implementation."
+        },
+        {
+          "path": "frontend/src/components/PinDialog.tsx",
+          "operation": "modify",
+          "description": "Verify and re-apply the modal PIN entry dialog with a cyberpunk aesthetic used to authenticate wallpaper changes, supporting error display and cancel/submit callbacks. Ensure PIN input handling, error states, and styling are current."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Verify and re-apply React Query hooks for fetching/mutating apps and settings from the backend actor, with default settings fallback values. Ensure query keys, mutations, and default values match the current implementation and backend interface types."
+        },
+        {
+          "path": "frontend/src/hooks/useSettings.ts",
+          "operation": "modify",
+          "description": "Verify and re-apply the thin wrapper around useGetSettings that returns the settings data and loading state with typed output. Ensure the hook correctly exports settings and loading state."
+        },
+        {
+          "path": "frontend/src/index.css",
+          "operation": "modify",
+          "description": "Verify and re-apply global CSS defining CSS custom properties for a dark neon OS theme, plus utility classes for glow effects, scanlines, backdrop blur levels, taskbar/icon sizes, and font variants. Ensure all custom properties, utility classes, and theme variables are current and match the neon/cyberpunk design system."
+        },
+        {
+          "path": "frontend/tailwind.config.js",
+          "operation": "modify",
+          "description": "Verify and re-apply Tailwind CSS configuration extending the theme with neon/OS color palettes, custom fonts (Orbitron, Share Tech Mono), box shadows, border radii, and enabling typography, container-queries, and animate plugins. Ensure all color tokens, font families, and plugin configurations are current."
+        },
+        {
+          "path": "frontend/index.html",
+          "operation": "modify",
+          "description": "Verify and re-apply the HTML entry point that preloads Orbitron and Share Tech Mono fonts from Google Fonts and mounts the React app root with overflow-hidden body styles. Ensure font preloading and body styles are correctly set."
         }
       ]
     }

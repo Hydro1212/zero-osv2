@@ -1,106 +1,142 @@
-import React, { useState } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
 import { useAddApp } from "../hooks/useQueries";
+import { toast } from "sonner";
+import { X, Plus, Globe } from "lucide-react";
 
 interface AddAppDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-function normalizeUrl(url: string): string {
-  if (!url) return url;
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  return "https://" + url;
-}
-
 export default function AddAppDialog({ open, onOpenChange }: AddAppDialogProps) {
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
-  const addApp = useAddApp();
+  const { mutate: addApp, isPending } = useAddApp();
 
   if (!open) return null;
 
-  async function handleSubmit(e: React.FormEvent) {
+  function normalizeUrl(raw: string): string {
+    const trimmed = raw.trim();
+    if (!trimmed) return "";
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+    return `https://${trimmed}`;
+  }
+
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmedName = name.trim();
-    const trimmedUrl = normalizeUrl(url.trim());
+    const normalizedUrl = normalizeUrl(url);
+    if (!trimmedName || !normalizedUrl) return;
 
-    if (!trimmedName || !trimmedUrl) {
-      toast.error("Please fill in all fields");
-      return;
-    }
-
-    const id = `app-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-
-    try {
-      await addApp.mutateAsync({ id, name: trimmedName, url: trimmedUrl });
-      toast.success(`${trimmedName} installed!`);
-      setName("");
-      setUrl("");
-      onOpenChange(false);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to add app";
-      toast.error(msg);
-    }
+    const id = `app_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    addApp(
+      { id, name: trimmedName, url: normalizedUrl },
+      {
+        onSuccess: () => {
+          toast.success(`${trimmedName} installed successfully`);
+          setName("");
+          setUrl("");
+          onOpenChange(false);
+        },
+        onError: (err: unknown) => {
+          const msg = err instanceof Error ? err.message : "Failed to add app";
+          toast.error(msg);
+        },
+      }
+    );
   }
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.7)" }}
+      className="fixed inset-0 flex items-center justify-center z-[200]"
+      style={{ background: "oklch(0.05 0.02 220 / 0.8)", backdropFilter: "blur(8px)" }}
+      onClick={() => onOpenChange(false)}
     >
       <div
-        className="w-[400px] rounded-xl border border-neon-cyan/30 p-6"
+        className="relative w-full max-w-md mx-4 rounded-xl overflow-hidden"
         style={{
-          background:
-            "linear-gradient(135deg, rgba(0,0,0,0.95) 0%, rgba(0,20,30,0.98) 100%)",
-          boxShadow:
-            "0 0 40px rgba(0,255,255,0.15), 0 0 80px rgba(0,255,255,0.05)",
+          background: "oklch(0.12 0.03 220)",
+          border: "1px solid oklch(0.8 0.2 195 / 0.4)",
+          boxShadow: "0 0 40px oklch(0.8 0.2 195 / 0.2)",
         }}
+        onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="font-orbitron text-sm text-neon-cyan tracking-widest uppercase mb-5">
-          Install App
-        </h2>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div>
-            <label className="block text-xs font-mono text-neon-cyan/60 mb-1 uppercase tracking-widest">
+        {/* Header */}
+        <div
+          className="flex items-center justify-between px-5 py-4"
+          style={{ borderBottom: "1px solid oklch(0.8 0.2 195 / 0.2)" }}
+        >
+          <div className="flex items-center gap-2">
+            <Plus size={16} className="text-neon-cyan" />
+            <span className="font-orbitron text-sm font-bold text-neon-cyan tracking-wider">
+              INSTALL APP
+            </span>
+          </div>
+          <button
+            onClick={() => onOpenChange(false)}
+            className="text-white/40 hover:text-white/80 transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="font-mono-tech text-xs text-white/60 uppercase tracking-wider">
               App Name
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="My App"
-              className="w-full bg-black/40 border border-neon-cyan/30 rounded px-3 py-2 text-sm font-mono text-neon-cyan placeholder-neon-cyan/20 focus:outline-none focus:border-neon-cyan/60"
-              autoFocus
+              placeholder="e.g. GitHub"
+              className="w-full px-3 py-2 rounded-lg font-mono-tech text-sm text-white placeholder-white/30 outline-none transition-all duration-200 focus:border-neon-cyan focus:shadow-[0_0_10px_oklch(0.8_0.2_195/0.4)]"
+              style={{
+                background: "oklch(0.08 0.02 220)",
+                border: "1px solid oklch(0.8 0.2 195 / 0.25)",
+              }}
+              required
             />
           </div>
-          <div>
-            <label className="block text-xs font-mono text-neon-cyan/60 mb-1 uppercase tracking-widest">
+
+          <div className="flex flex-col gap-1.5">
+            <label className="font-mono-tech text-xs text-white/60 uppercase tracking-wider">
               URL
             </label>
-            <input
-              type="text"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://example.com"
-              className="w-full bg-black/40 border border-neon-cyan/30 rounded px-3 py-2 text-sm font-mono text-neon-cyan placeholder-neon-cyan/20 focus:outline-none focus:border-neon-cyan/60"
-            />
+            <div className="relative">
+              <Globe size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+              <input
+                type="text"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="e.g. github.com"
+                className="w-full pl-8 pr-3 py-2 rounded-lg font-mono-tech text-sm text-white placeholder-white/30 outline-none transition-all duration-200 focus:border-neon-cyan focus:shadow-[0_0_10px_oklch(0.8_0.2_195/0.4)]"
+                style={{
+                  background: "oklch(0.08 0.02 220)",
+                  border: "1px solid oklch(0.8 0.2 195 / 0.25)",
+                }}
+                required
+              />
+            </div>
           </div>
-          <div className="flex gap-3 mt-2">
+
+          <div className="flex gap-3 pt-1">
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="flex-1 py-2 rounded border border-neon-cyan/20 text-neon-cyan/50 text-xs font-mono hover:border-neon-cyan/40 hover:text-neon-cyan/70 transition-all"
+              className="flex-1 py-2 rounded-lg font-mono-tech text-sm text-white/60 border border-white/20 hover:border-white/40 hover:text-white/80 transition-all duration-200"
+              style={{ background: "oklch(0.08 0.02 220)" }}
             >
-              Cancel
+              CANCEL
             </button>
             <button
               type="submit"
-              disabled={addApp.isPending}
-              className="flex-1 py-2 rounded border border-neon-cyan/40 bg-neon-cyan/10 text-neon-cyan text-xs font-mono hover:bg-neon-cyan/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isPending}
+              className="flex-1 py-2 rounded-lg font-orbitron text-sm font-bold text-neon-cyan border border-neon-cyan hover:shadow-[0_0_16px_oklch(0.8_0.2_195/0.6)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ background: "oklch(0.08 0.02 220)" }}
             >
-              {addApp.isPending ? "Installing..." : "Install"}
+              {isPending ? "INSTALLING..." : "INSTALL"}
             </button>
           </div>
         </form>

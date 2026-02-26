@@ -7,11 +7,6 @@ export interface None {
     __kind__: "None";
 }
 export type Option<T> = Some<T> | None;
-export interface VideoSettings {
-    playbackSpeed: number;
-    volume: number;
-    isMuted: boolean;
-}
 export interface AppEntry {
     id: string;
     url: string;
@@ -74,10 +69,7 @@ export enum WindowBorderGlow {
 }
 export interface backendInterface {
     addApp(id: string, name: string, url: string): Promise<void>;
-    doesFileExist(directoryId: string, fileName: string): Promise<boolean>;
     getApp(id: string): Promise<AppEntry>;
     getSettings(): Promise<Settings>;
-    getVideoSettings(): Promise<VideoSettings>;
     saveSettings(newSettings: Settings): Promise<void>;
-    updateVideoSettings(newVideoSettings: VideoSettings): Promise<void>;
 }
